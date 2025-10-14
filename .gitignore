@@ -1,2 +1,3 @@
 virtual_disk.img
 *.img
+log/
