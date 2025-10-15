@@ -48,4 +48,32 @@ if [ "$usage_info" -lt "$THRESHOLD" ]; then
 else
     echo "Статус: Превышен порог! ($usage_info% >= $THRESHOLD%)"
     echo "Требуется выполнить очистку."
+    BACKUP_DIR="$(dirname "$LOG_DIR")/backup"
+    mkdir -p "$BACKUP_DIR"
+    
+    echo "Создана папка для бэкапов: $BACKUP_DIR"
+    ARCHIVE_NAME="backup_$(date +%Y%m%d_%H%M%S).tar.gz"
+    ARCHIVE_PATH="$BACKUP_DIR/$ARCHIVE_NAME"
+
+    echo "Начинаем архивацию файлов..."
+    echo "Имя архива: $ARCHIVE_NAME"
+
+    if tar -czf "$ARCHIVE_PATH" --exclude='lost+found' -C "$LOG_DIR" . ; then
+        echo "✅ Архивация успешно завершена: $ARCHIVE_PATH"
+
+        echo "Удаляем оригинальные файлы из $LOG_DIR..."
+        if rm -f "$LOG_DIR"/*.log; then
+            echo "✅ Файлы успешно удалены"
+            
+            # Проверяем новое использование диска
+            new_usage=$(df "$LOG_DIR" | awk 'NR==2 {print $5}' | sed 's/%//')
+            echo "Новое использование диска: $new_usage%"
+        else
+            echo "⚠️ Не удалось удалить некоторые файлы"
+        fi
+        
+    else
+        echo "❌ Ошибка при создании архива!"
+        exit 1
+    fi
 fi
