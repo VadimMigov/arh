@@ -74,9 +74,9 @@ run_test() {
     # Запускаем основной скрипт
     echo "Запускаем скрипт очистки..."
     if [ "$use_lzma" = "1" ]; then
-        LAB1_MAX_COMPRESSION=1 "$SCRIPT_PATH" --path "$LOG_DIR" --threshold "$threshold" --backup-dir "$BACKUP_DIR"
+        LAB1_MAX_COMPRESSION=1 "$SCRIPT_PATH" "$LOG_DIR" "$threshold"
     else
-        "$SCRIPT_PATH" --path "$LOG_DIR" --threshold "$threshold" --backup-dir "$BACKUP_DIR"
+        "$SCRIPT_PATH" "$LOG_DIR" "$threshold"
     fi
     
     # Проверяем результат
@@ -88,12 +88,24 @@ run_test() {
     echo "- Осталось файлов: $remaining_files"
     
     # Проверяем успешность теста
-    if [ $backup_files -gt 0 ]; then
-        echo "✅ ТЕСТ ПРОЙДЕН"
-        return 0
+    if [ "$threshold" -ge 90 ]; then
+        # Для высокого порога - ожидаем что архивации НЕ будет
+        if [ $backup_files -eq 0 ]; then
+            echo "✅ ТЕСТ ПРОЙДЕН (порог не превышен - архивации не должно быть)"
+            return 0
+        else
+            echo "❌ ТЕСТ ПРОВАЛЕН (архивация когда порог не превышен)"
+            return 1
+        fi
     else
-        echo "❌ ТЕСТ ПРОВАЛЕН"
-        return 1
+        # Для нормальных порогов - ожидаем архивацию
+        if [ $backup_files -gt 0 ]; then
+            echo "✅ ТЕСТ ПРОЙДЕН"
+            return 0
+        else
+            echo "❌ ТЕСТ ПРОВАЛЕН"
+            return 1
+        fi
     fi
 }
 
